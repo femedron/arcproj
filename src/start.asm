@@ -12,37 +12,37 @@ _start:
 
 read_next:
     push rbx
-    mov eax, 3		 ; read
-    mov ebx, 0		 ; standard input
-    mov ecx, buf        ; address to pass to
-    mov edx, [buf_size]		 ; input length 
+    mov rax, 3		 ; read
+    mov rbx, 0		 ; standard input
+    mov rcx, buf        ; address to pass to
+    mov rdx, [buf_size]		 ; input length 
     int 0x80
     pop rbx               
-    or eax, eax
+    or rax, rax 
     jz proceed
 
     ; save buf
-    mov ecx, eax
+    mov rcx, rax
     lea rsi, [buf]
     lea rdi, [rbx]
     cld
     rep movsb
-    add ebx, eax
+    add rbx, rax
     jmp read_next
 
 proceed:
-    mov byte [ebx], 0x0
+    mov byte [rbx], 0x0
 
 ; test
 write_next:
-    mov eax, 4           ; write
-    mov ecx, input          ; address to the value
-    sub ebx, ecx
-    mov edx, ebx           ; length of output 
+    mov rax, 4           ; write
+    mov rcx, input          ; address to the value
+    sub rbx, rcx
+    mov rdx, rbx           ; length of output 
     push rbx
-    mov ebx, 1           ; standard output
+    mov rbx, 1           ; standard output
     int 0x80             
 
 exit:
-    mov eax, 1
+    mov rax, 1
     int 0x80
