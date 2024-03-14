@@ -1,32 +1,48 @@
-global _start
 section .data
- variable: db 0
-        ; Align to the nearest 2 byte boundary, must be a power of two
-        ;align 2
-        ; String, which is just a collection of bytes, 0xA is newline
-        ;str:     db 'Hello, world!',0xA
-        ;strLen:  equ $-str
+    buf_size: db 20
 section .bss
- buf: resb 1 
+    buf: resb 20
+    input: resb 200000
+    ;input_next:
 section .text
-_start:
- ;jmp dbg_write
- read_next:
-  ; read a byte from stdin
-  mov eax, 3		 ; 3 is recognized by the system as meaning "read"
-  mov ebx, 0		 ; read from standard input
-  mov ecx, buf        ; address to pass to
-  mov edx, 1		 ; input length (one byte)
-  int 0x80                 ; call the kernel
-  ;jnz read_next
+    global _start
 
- ;dbg_write:
-  
- write_next:
-  mov eax, 4           ; the system interprets 4 as "write"
-  mov ebx, 1           ; standard output (print to terminal)
-  mov ecx, buf    ; pointer to the value being passed
-  mov edx, 1           ; length of output (in bytes)
-  int 0x80             ; call the kernel
- mov eax, 1
- int 0x80
+_start:
+    lea rbx, [input]
+
+read_next:
+    push rbx
+    mov eax, 3		 ; read
+    mov ebx, 0		 ; standard input
+    mov ecx, buf        ; address to pass to
+    mov edx, [buf_size]		 ; input length 
+    int 0x80
+    pop rbx               
+    or eax, eax
+    jz proceed
+
+    ; save buf
+    mov ecx, eax
+    lea rsi, [buf]
+    lea rdi, [rbx]
+    cld
+    rep movsb
+    add ebx, eax
+    jmp read_next
+
+proceed:
+    mov byte [ebx], 0x0
+
+; test
+write_next:
+    mov eax, 4           ; write
+    mov ecx, input          ; address to the value
+    sub ebx, ecx
+    mov edx, ebx           ; length of output 
+    push rbx
+    mov ebx, 1           ; standard output
+    int 0x80             
+
+exit:
+    mov eax, 1
+    int 0x80
