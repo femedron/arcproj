@@ -1,9 +1,9 @@
 section .data
-    buf_size: db 20
+    buf_size: db 24    ; 16 (key) + 1 (' ') + 6 (val) + 1 (0x0)
 section .bss
-    buf: resb 20
-    input: resb 200000
-    ;input_next:
+    buf: resb 24         ; each line
+    heap: resb 170000      ; (16 (key) + ' ') * 10000 , 0x0 at tail
+    matrix: resb 10000*14   ; (4 (val) + 2 (count) + 8 (key addr in heap)) * 10000
 section .text
     global _start
 
@@ -16,8 +16,24 @@ _start:
         jnz read_entry
     mov byte [rbx], 0x0
 
-    jmp write_test
-    ;jmp exit
+    dec rbx
+    call ascii_to_number
+
+
+    dec rbx              
+    lea rcx, [buf]
+    sub rbx, rcx
+    xchg rbx, rcx     
+    push rcx        ; length of key
+    push rbx        ; key
+    push rax        ; value
+
+    ;; compare strings including terminating character !!!
+
+    jmp number_write_test
+    ;jmp write_test
+    jmp exit
+
 
 read_line:
     push rbp
@@ -42,18 +58,63 @@ read_line:
     ;jmp read_line
 
 ascii_to_number:
+    ; rbx - pointer on number end
+    ; returns the value in rax
+    ; then rbx points on number start
     push rbp
     mov rbp, rsp
-    ;
-    leave
-    ret
+    xor rax, rax             ; return value
+    xor rcx, rcx             ; counter
+    
+    ascii_to_number_loop:
+        mov rdx, [rbx]
+        cmp rdx, ' '
+        jz ascii_to_number_end
+        cmp rdx, '-'
+        jz ascii_to_number_neg
+        sub rdx, 48               ; 48 == ascii '0'
+        push rax
+        push rcx
+        mov rax, 1
+        power:
+            cmp ecx, 0
+            jz end_power
+            imul rax, 10                                             
+            dec ecx
+            jmp power
+        end_power:
+        imul rdx, rax
+        pop rcx
+        pop rax
+        add rax, rdx
+        inc rcx
+        dec rbx
+        jmp ascii_to_number_loop
+
+    ascii_to_number_neg:
+        dec rbx
+        neg rax
+    ascii_to_number_end:
+        inc rbx
+        leave
+        ret
 
 compare_strs:
+    ; rax and rbx
+    ; rcx - length
+    ; returns 0 or 1 in rdx
     push rbp
     mov rbp, rsp
-    ;
-    leave
-    ret
+    xor rdx, rdx
+    lea rsi, [rax]
+    lea rdi, [rbx]
+    cld
+    repe cmpsb
+    jnz not_equal
+    inc rdx
+    not_equal:
+        leave
+        ret
 
 ;compare <key> with each <line> of heap
 parse_heap:
@@ -90,7 +151,18 @@ write_test:
     sub rbx, rcx
     mov rdx, rbx           ; length of output 
     mov rbx, 1           ; standard output
-    int 0x80             
+    int 0x80       
+    jmp exit
+
+number_write_test:
+    add rax, 48
+    mov byte [rbx], al
+    mov rax, 4           ; write
+    mov rcx, buf          ; address to the value
+    mov rdx, 1           ; length of output 
+    mov rbx, 1           ; standard output
+    int 0x80       
+    jmp exit
 
 exit:
     mov rax, 1
