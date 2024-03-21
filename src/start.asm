@@ -33,6 +33,49 @@ read_next:
 proceed:
     mov byte [rbx], 0x0
 
+ascii_to_number:
+    push rbp
+    mov rbp, rsp
+    ;
+    leave
+    ret
+
+compare_strs:
+    push rbp
+    mov rbp, rsp
+    ;
+    leave
+    ret
+
+;compare <key> with each <line> of heap
+parse_heap:
+    push rbp
+    mov rbp, rsp
+    ;
+    leave
+    ret
+
+add_heap_entry:
+    push rbp
+    mov rbp, rsp
+    ;
+    leave
+    ret
+
+add_matrix_entry:
+    push rbp
+    mov rbp, rsp
+    ;
+    leave
+    ret
+
+upd_matrix_entry:
+    push rbp
+    mov rbp, rsp
+    ;
+    leave
+    ret
+
 ; test
 write_next:
     mov rax, 4           ; write
