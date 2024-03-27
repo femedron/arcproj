@@ -1,5 +1,6 @@
 section .data
     buf_size: db 24    ; 16 (key) + 1 (' ') + 6 (val) + 1 (0x0A)
+    NEW_LINE: db 0x0a
 section .bss
     buf: resb 24         ; each line
     heap: resb 170000      ; (16 (key) + ' ') * 10000 , 0x0 at tail
@@ -17,6 +18,8 @@ _start:
     handle_entry:
         call read_line
         cmp byte [rcx], 0    ; is 0x0 ?
+        jz proceed
+        or rax, rax    ; is 0 bytes read ?
         jz proceed
         lea rbx, [rcx - 1]   ; number end
 
@@ -53,9 +56,6 @@ _start:
     proceed:
     call print_matrix
     jmp exit
-    ;jmp number_write_test
-    ;jmp write_test
-
 
 read_line:
     ; returns:
@@ -68,6 +68,8 @@ read_line:
         mov rax, 3		         ; read
         mov rdx, 1		 ; input length 
         int 0x80
+        or rax, rax         ; number of bytes read
+        jz term_found
         cmp byte [rcx], 0x0A
         jz term_found
         cmp byte [rcx], 0
@@ -198,12 +200,11 @@ add_heap_entry:
     mov rbp, rsp
 
     lea rsi, [buf]
-    lea rdi, [heap_end]
-    lea rax, [heap_end]        ; str addr
+    mov rdi, qword [heap_end]
+    mov rax, rdi        ; str addr
     cld
     rep movsb
-    inc rdi 
-    mov qword [heap_end], rdi
+    mov qword [heap_end], rdi     ; point to free space
     leave
     ret
 
@@ -216,12 +217,12 @@ add_matrix_entry:
     push rbp
     mov rbp, rsp
     
-    lea rdx, [matrix_end]
+    mov rdx, qword [matrix_end]
     mov dword [rdx], eax
     mov word [rdx + 4], 1
     mov qword [rdx + 6], rbx
     add rdx, 14
-    mov [matrix_end], rdx
+    mov qword [matrix_end], rdx
     leave
     ret
 
@@ -233,8 +234,8 @@ upd_matrix_entry:
     push rdx
     push rbp
     mov rbp, rsp
+    lea rcx, [matrix + 6]    ; first key's addr' start
     check_next:
-        lea rcx, [matrix + 6]    ; first key's addr' start
         mov rdx, qword [rcx]
         cmp rdx, rbx
         jz entry_found
@@ -265,15 +266,20 @@ write_line:
         cmp byte [rax], 0
         jz term_reached
         push rax
+        mov rcx, rax          ; address to the value
         mov rax, 4           ; write
         mov rdx, 1           ; length of output 
-        mov rcx, rax          ; address to the value
         mov rbx, 1           ; standard output
         int 0x80
         pop rax
         inc rax
         jmp write_char
     term_reached:
+    mov rcx, NEW_LINE          ; address to the value
+    mov rax, 4           ; write
+    mov rdx, 1           ; length of output 
+    mov rbx, 1           ; standard output
+    int 0x80
     leave
     ret
 
@@ -282,35 +288,18 @@ print_matrix:
     mov rbp, rsp
     lea rax, [matrix + 6]
     print_next:
-        cmp rax, [matrix_end]
+        cmp rax, qword [matrix_end]
         jge all_printed
         mov rbx, [rax]
-        add rax, 14
+        add rax, 14                ; matrix entry length
         push rax
-        push rax
+        push rbx
         call write_line
         pop rax
         jmp print_next
     all_printed:
     leave 
     ret
-write_test:
-    mov rax, 4           ; write
-    mov rdx, [buf_size]           ; length of output 
-    mov rcx, buf          ; address to the value
-    mov rbx, 1           ; standard output
-    int 0x80       
-    jmp exit
-
-number_write_test:
-    add rax, 48
-    mov byte [rbx], al
-    mov rax, 4           ; write
-    mov rcx, buf          ; address to the value
-    mov rdx, 1           ; length of output 
-    mov rbx, 1           ; standard output
-    int 0x80       
-    jmp exit
 
 exit:
     mov rax, 1
