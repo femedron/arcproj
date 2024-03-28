@@ -102,10 +102,11 @@ ascii_to_number:
     xor rcx, rcx             ; counter
     
     ascii_to_number_loop:
+        xor rdx, rdx
         mov dl, byte [rbx]
-        cmp rdx, ' '
+        cmp dl, ' '
         jz ascii_to_number_end
-        cmp rdx, '-'
+        cmp dl, '-'
         jz ascii_to_number_neg
         sub rdx, 48               ; 48 == ascii '0'
         push rax
@@ -333,8 +334,33 @@ calc_avg:
     avg_done:
     ret
 
-sort: ;todo
-
+sort:
+    mov rax, qword [entries_end]
+    mov rbx, entries
+    sub rax, rbx
+    mov rcx, 8
+    cqo
+    div rcx  ; entry count
+    mov rcx, rax
+    dec rcx  ; count-1
+    jz end_sort
+    outerLoop:
+        push rcx
+        lea rsi, entries
+    innerLoop:
+        mov rax, qword [rsi]    ; entry
+        mov edx, dword [rax]    ; avg 
+        mov rbx, qword [rsi+8]    ; next entry
+        cmp edx, dword [rbx]
+        jge nextStep
+        mov qword [rsi], rbx    ; switch in entries[]
+        mov qword [rsi+8], rax
+    nextStep:
+        add rsi, 8
+        loop innerLoop
+        pop rcx
+        loop outerLoop
+    end_sort:
     ret
 exit:
     mov rax, 1
