@@ -20,12 +20,22 @@ _start:
         mov [heap_end], rax
         lea rax, [entries]
         mov [entries_end], rax
+        mov rax, 1
+        push rax                
     handle_entry:
+        pop rax
+        or rax, rax         ; continue flag
+        jz proceed
+
         call read_line
-        cmp byte [rcx], 0    ; is 0x0 ?
-        jz proceed
-        or rax, rax    ; is 0 bytes read ?
-        jz proceed
+        or rax, rax         ; 0 if ends with 0x0
+        jnz entry_present
+            cmp rcx, buf     ; 0 if only 0x0
+            jz proceed
+                ; line ends with 0x0
+                xor rax, rax      ; clear continue flag
+        entry_present:
+        push rax        
         lea rbx, [rcx - 1]   ; number end
 
         push rbx  ;p
@@ -67,6 +77,7 @@ _start:
 read_line:
     ; returns:
     ; rcx - addr of line end
+    ; rax - (last byte == 0x0)? 0 : 1
     push rbp
     mov rbp, rsp
     lea rcx, [buf]           ; address to pass to
@@ -75,11 +86,9 @@ read_line:
         mov rax, 3		         ; read
         mov rdx, 1		 ; input length 
         int 0x80
-        or rax, rax         ; number of bytes read
-        jz term_found
+        or rax, rax         ; number of bytes read, 0 if read 0x0
+        jz term_found       
         cmp byte [rcx], 0x0A
-        jz term_found
-        cmp byte [rcx], 0
         jz term_found
         inc rcx
         jmp read_char

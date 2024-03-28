@@ -1,7 +1,8 @@
 
 === test1 ===
-a1
+a3
 a2
+a1
 === test2 ===
 Accessories
 Clothing
