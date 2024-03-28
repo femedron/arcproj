@@ -54,7 +54,7 @@ _start:
             call upd_matrix_entry
             jmp handle_entry
     proceed:
-    call print_matrix
+    call print_keys
     jmp exit
 
 read_line:
@@ -283,7 +283,7 @@ write_line:
     leave
     ret
 
-print_matrix:
+print_keys:
     push rbp
     mov rbp, rsp
     lea rax, [matrix + 6]
@@ -301,6 +301,21 @@ print_matrix:
     leave 
     ret
 
+calc_avg:
+    lea rbx, [matrix]
+    calc_next:
+        cmp rbx, qword [matrix_end]
+        jge avg_done
+        xor rax, rax
+        xor rdx, rdx
+        mov eax, dword [rbx]        ; value
+        mov dx, word [rbx+4]       ; count
+        idiv edx
+        mov dword [rbx], eax        ; avg
+        add rbx, 14                ; matrix entry length
+        jmp calc_next
+    avg_done:
+    ret
 exit:
     mov rax, 1
     xor rbx, rbx
