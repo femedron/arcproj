@@ -7,14 +7,19 @@ section .bss
     heap_end: resq 1        ; heap free address
     matrix: resb 10000*14   ; (4 (val) + 2 (count) + 8 (key addr in heap)) * 10000
     matrix_end: resq 1      ; matrix free row address 
+    entries: resq 10000     ; pointers to matrix entries (used for sorting) 
+    entries_end: resq 1
 section .text
     global _start
 
 _start:
-    lea rax, [matrix]
-    mov [matrix_end], rax
-    lea rax, [heap]
-    mov [heap_end], rax
+    init:
+        lea rax, [matrix]
+        mov [matrix_end], rax
+        lea rax, [heap]
+        mov [heap_end], rax
+        lea rax, [entries]
+        mov [entries_end], rax
     handle_entry:
         call read_line
         cmp byte [rcx], 0    ; is 0x0 ?
@@ -54,6 +59,8 @@ _start:
             call upd_matrix_entry
             jmp handle_entry
     proceed:
+    ;call calc_avg
+    ;call sort
     call print_keys
     jmp exit
 
@@ -208,7 +215,7 @@ add_heap_entry:
     leave
     ret
 
-add_matrix_entry:
+add_matrix_entry: 
     ; rax - value, rbx - key addr
     pop rdx
     pop rax
@@ -217,8 +224,14 @@ add_matrix_entry:
     push rbp
     mov rbp, rsp
     
+    ; put entry address in entries[]
     mov rdx, qword [matrix_end]
-    mov dword [rdx], eax
+    mov rcx, qword [entries_end]
+    mov qword [rcx], rdx            
+    add rcx, 8
+    mov qword [entries_end], rcx
+    ; set entry
+    mov dword [rdx], eax            
     mov word [rdx + 4], 1
     mov qword [rdx + 6], rbx
     add rdx, 14
@@ -286,12 +299,14 @@ write_line:
 print_keys:
     push rbp
     mov rbp, rsp
-    lea rax, [matrix + 6]
+    lea rax, [entries]
     print_next:
-        cmp rax, qword [matrix_end]
+        cmp rax, qword [entries_end]
         jge all_printed
-        mov rbx, [rax]
-        add rax, 14                ; matrix entry length
+        mov rbx, qword [rax]        ; matrix entry
+        add rbx, 6
+        mov rbx, qword [rbx]        ; key string
+        add rax, 8                  ; entry pointer length  
         push rax
         push rbx
         call write_line
@@ -315,6 +330,10 @@ calc_avg:
         add rbx, 14                ; matrix entry length
         jmp calc_next
     avg_done:
+    ret
+
+sort: ;todo
+
     ret
 exit:
     mov rax, 1
