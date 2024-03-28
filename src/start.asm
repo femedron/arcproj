@@ -59,8 +59,8 @@ _start:
             call upd_matrix_entry
             jmp handle_entry
     proceed:
-    ;call calc_avg
-    ;call sort
+    call calc_avg
+    call sort
     call print_keys
     jmp exit
 
@@ -322,10 +322,11 @@ calc_avg:
         cmp rbx, qword [matrix_end]
         jge avg_done
         xor rax, rax
-        xor rdx, rdx
+        xor rcx, rcx
         mov eax, dword [rbx]        ; value
-        mov dx, word [rbx+4]       ; count
-        idiv edx
+        mov cx, word [rbx+4]       ; count
+        cdq 
+        idiv ecx
         mov dword [rbx], eax        ; avg
         add rbx, 14                ; matrix entry length
         jmp calc_next
