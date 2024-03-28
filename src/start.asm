@@ -5,22 +5,16 @@ section .bss
     buf: resb 24         ; each line
     heap: resb 170000      ; (16 (key) + ' ') * 10000 , 0x0 at tail
     heap_end: resq 1        ; heap free address
-    matrix: resb 10000*14   ; (4 (val) + 2 (count) + 8 (key addr in keys array)) * 10000
-    matrix_end: resq 1      ; matrix free row address
-    keys: resq 10000        ; key addresses of heap entries
-    keys_end: resq 1
+    matrix: resb 10000*14   ; (4 (val) + 2 (count) + 8 (key addr in heap)) * 10000
+    matrix_end: resq 1      ; matrix free row address 
 section .text
     global _start
 
 _start:
-    init_pointers:
-        lea rax, [matrix]
-        mov [matrix_end], rax
-        lea rax, [heap]
-        mov [heap_end], rax
-        lea rax, [keys]
-        mov [keys_end], rax
-
+    lea rax, [matrix]
+    mov [matrix_end], rax
+    lea rax, [heap]
+    mov [heap_end], rax
     handle_entry:
         call read_line
         cmp byte [rcx], 0    ; is 0x0 ?
@@ -60,9 +54,7 @@ _start:
             call upd_matrix_entry
             jmp handle_entry
     proceed:
-    ;call calc_avg
-    ;call sort_keys
-    call print_keys
+    call print_matrix
     jmp exit
 
 read_line:
@@ -225,20 +217,12 @@ add_matrix_entry:
     push rbp
     mov rbp, rsp
     
-    ; add to keys array
-    mov rdx, qword [keys_end]
-    mov qword [rdx], rbx
-    mov rbx, rdx              
-    add rdx, 8
-    mov qword [keys_end], rdx    ; update end
-    ; add matrix entry
     mov rdx, qword [matrix_end]
     mov dword [rdx], eax
     mov word [rdx + 4], 1
-    mov qword [rdx + 6], rbx      ; key entry
+    mov qword [rdx + 6], rbx
     add rdx, 14
     mov qword [matrix_end], rdx
-
     leave
     ret
 
@@ -250,10 +234,9 @@ upd_matrix_entry:
     push rdx
     push rbp
     mov rbp, rsp
-    lea rcx, [matrix + 6]    ; pointer to key of matrix entry 
+    lea rcx, [matrix + 6]    ; first key's addr' start
     check_next:
-        mov rdx, qword [rcx]  ; pointer to keys[]
-        mov rdx, qword [rdx]  ; pointer to heap[]  (key)
+        mov rdx, qword [rcx]
         cmp rdx, rbx
         jz entry_found
         add rcx, 14
@@ -300,7 +283,7 @@ write_line:
     leave
     ret
 
-print_keys:
+print_matrix:
     push rbp
     mov rbp, rsp
     lea rax, [matrix + 6]
@@ -308,7 +291,6 @@ print_keys:
         cmp rax, qword [matrix_end]
         jge all_printed
         mov rbx, [rax]
-        mov rbx, [rbx]
         add rax, 14                ; matrix entry length
         push rax
         push rbx
@@ -319,55 +301,6 @@ print_keys:
     leave 
     ret
 
-calc_avg:
-    lea rbx, [matrix]
-    calc_next:
-        cmp rbx, qword [matrix_end]
-        jge avg_done
-        xor rax, rax
-        xor rdx, rdx
-        mov eax, dword [rbx]        ; value
-        mov dx, word [rbx+4]       ; count
-        idiv edx
-        mov dword [rbx], eax        ; avg
-        add rbx, 14                ; matrix entry length
-        jmp calc_next
-    avg_done:
-    ret
-
-sort_keys:
-    ; lea rax, [matrix_keys]
-    ; xor rbx, rbx
-    ; xor rcx, rcx    ; index
-    ; mov cx, word ptr count
-    ; dec cx  ; count-1
-    ; outerLoop:
-    ;     push cx
-    ;     lea si, array
-    ; innerLoop:
-    ;     mov ax, [si]
-    ;     cmp ax, [si+2]
-    ;     jl nextStep
-    ;     xchg [si+2], ax
-    ;     mov [si], ax
-    ; nextStep:
-    ;     add si, 2
-    ;     loop innerLoop
-    ;     pop cx
-    ;     loop outerLoop
-    ; print_next:
-    ;     cmp rax, qword [matrix_end]
-    ;     jge all_printed
-    ;     mov rbx, [rax]
-    ;     add rax, 14                ; matrix entry length
-    ;     push rax
-    ;     push rbx
-    ;     call write_line
-    ;     pop rax
-    ;     jmp print_next
-
-    sort_done:
-    ret
 exit:
     mov rax, 1
     xor rbx, rbx
