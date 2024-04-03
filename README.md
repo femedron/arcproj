@@ -1,9 +1,8 @@
 
-# ASM project, variant 3 by Stetsyk M.
+# NASM project
 
-**Задача**:
-- Прочитати з stdin N рядків до появи EOF (максимум 10000 рядків).
-Рядки розділяються АБО послідовністю байтів 0x0D та 0x0A (CR LF), або одним символом - 0x0D чи 0x0A.
-Кожен рядок це пара "\<key> \<value>" (розділяються пробілом), де ключ - це текстовий ідентифікатор макс 16 символів (будь-які символи окрім white space chars - пробілу чи переводу на новий рядок), а значення - це десяткове ціле знакове число в діапазоні [-10000, 10000].
-- Провести групування: заповнити масив структур з 2х значень \<key> та \<average> , які будуть включати лише унікальні значення \<key> а \<average> - це средне значення, обраховане для всіх \<value>, що відповідають конкретному значенню \<key>.
-- Відсортувати за \<average>, та вивести в stdout значення key (average desc), кожен key окремим рядком.
+**Task**:
+- Read N lines from stdin until EOF appears (maximum 10,000 lines). Lines are separated by a single byte - 0x0A. Each line is a pair "<key> <value>" (separated by a space), where the key is a textual identifier with a maximum of 16 characters (any characters except white space chars - space or newline), and the value is a decimal integer in the range [-10,000, 10,000].
+- Perform grouping: fill an array of structures with 3 values <key>, <value> and <count>, which will include only unique values of <key>. <value> is the cumulative value of all that match the key, <count> is the count of such values.
+- Find <average> for all <value> and <count> corresponding to a specific <key>.
+- Sort by <average>, and output the key values to stdout (average descending), each key on a separate line.
